@@ -10,6 +10,7 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
   const port = parseInt(configService.get('PORT'));
   const clientPort = parseInt(configService.get('CLIENT_PORT'));
+  const globalPrefix = 'api';
 
   app.enableCors({
     origin: [
@@ -18,7 +19,8 @@ async function bootstrap() {
     ],
   });
 
+  app.setGlobalPrefix(globalPrefix);
   await app.listen(port);
-  logger.log(`Server running on port ${port}`);
+  logger.log(`Server running on port ${port}/${globalPrefix}`);
 }
 bootstrap();
