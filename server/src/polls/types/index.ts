@@ -19,11 +19,10 @@ export interface RejoinPollPayload {
 
 export interface CreatePollResponse {
   poll: Poll;
+  accessToken: string;
 }
 
-export interface JoinPollResponse {
-  poll: Poll;
-}
+export type JoinPollResponse = CreatePollResponse;
 
 export interface RejoinPollResponse {
   poll: Poll;
