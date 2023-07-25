@@ -1,3 +1,5 @@
+import { Request } from '@nestjs/common';
+
 import { Poll } from 'shared';
 
 export interface CreatePollPayload {
@@ -40,3 +42,15 @@ export interface AddParticipantData {
   userId: string;
   name: string;
 }
+
+export interface AuthRequestBody {
+  accessToken: string;
+}
+
+export interface AuthPayload {
+  pollId: string;
+  userId: string;
+  name: string;
+}
+
+export type AuthRequest = Request & AuthPayload;

@@ -89,7 +89,7 @@ export class PollsRepository {
       const currentPoll = await this.redisClient.get(key);
       const updatedPoll = { ...JSON.parse(currentPoll) } as Poll;
       updatedPoll.participants[userId] = name;
-      await this.redisClient.set(key, JSON.stringify(updatedPoll));
+      await this.redisClient.setex(key, +this.ttl, JSON.stringify(updatedPoll));
 
       return this.getPoll(pollId);
     } catch (e) {
