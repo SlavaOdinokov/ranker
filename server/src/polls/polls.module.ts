@@ -5,6 +5,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { PollsController } from './polls.controller';
 import { PollsService } from './polls.service';
 import { PollsRepository } from './repository/polls.repository';
+import { PollsGateway } from './polls.gateway';
 import { RedisModule } from 'src/redis/redis.module';
 import { getRedisConfig } from 'src/configs/redis.config';
 import { getJwtConfig } from 'src/configs/jwt.config';
@@ -16,6 +17,6 @@ import { getJwtConfig } from 'src/configs/jwt.config';
     JwtModule.registerAsync(getJwtConfig()),
   ],
   controllers: [PollsController],
-  providers: [PollsService, PollsRepository],
+  providers: [PollsService, PollsRepository, PollsGateway],
 })
 export class PollsModule {}
