@@ -1,3 +1,5 @@
+import { Poll } from 'shared';
+
 export interface CreatePollPayload {
   topic: string;
   votesPerVoter: number;
@@ -15,13 +17,27 @@ export interface RejoinPollPayload {
   name: string;
 }
 
-export interface CreatePollResponse extends CreatePollPayload {
+export interface CreatePollResponse {
+  poll: Poll;
+}
+
+export interface JoinPollResponse {
+  poll: Poll;
+}
+
+export interface RejoinPollResponse {
+  poll: Poll;
+}
+
+export interface CreatePollData {
+  pollId: string;
+  topic: string;
+  votesPerVoter: number;
+  userId: string;
+}
+
+export interface AddParticipantData {
   pollId: string;
   userId: string;
+  name: string;
 }
-
-export interface JoinPollResponse extends JoinPollPayload {
-  userId: string;
-}
-
-export type RejoinPollResponse = RejoinPollPayload;

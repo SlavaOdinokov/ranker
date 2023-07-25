@@ -8,6 +8,7 @@ import {
   JoinPollResponse,
   RejoinPollResponse,
 } from './types';
+import { RejoinPollDto } from './dto/rejoin.dto';
 
 @Controller('polls')
 export class PollsController {
@@ -24,11 +25,7 @@ export class PollsController {
   }
 
   @Post('/rejoin')
-  async rejoin(): Promise<RejoinPollResponse> {
-    return this.pollsService.rejoin({
-      name: 'From token',
-      pollId: 'Also from token',
-      userId: 'Also from token',
-    });
+  async rejoin(@Body() dto: RejoinPollDto): Promise<RejoinPollResponse> {
+    return this.pollsService.rejoin(dto);
   }
 }
