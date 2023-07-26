@@ -1,4 +1,5 @@
-import { Request } from '@nestjs/common';
+import { Request } from 'express';
+import { Socket } from 'socket.io';
 
 import { Poll } from 'shared';
 
@@ -54,3 +55,5 @@ export interface AuthPayload {
 }
 
 export type AuthRequest = Request & AuthPayload;
+
+export type SocketRequest = Socket & AuthPayload;
