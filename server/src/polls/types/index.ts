@@ -20,6 +20,17 @@ export interface RejoinPollPayload {
   name: string;
 }
 
+export interface AddParticipantPayload {
+  pollId: string;
+  userId: string;
+  name: string;
+}
+
+export interface RemoveParticipantPayload {
+  pollId: string;
+  userId: string;
+}
+
 export interface CreatePollResponse {
   poll: Poll;
   accessToken: string;
@@ -36,12 +47,6 @@ export interface CreatePollData {
   topic: string;
   votesPerVoter: number;
   userId: string;
-}
-
-export interface AddParticipantData {
-  pollId: string;
-  userId: string;
-  name: string;
 }
 
 export interface AuthRequestBody {

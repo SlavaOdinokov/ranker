@@ -6,7 +6,11 @@ import { Poll } from 'shared';
 
 import { Redis } from 'ioredis';
 import { IORedisKey } from 'src/redis/redis.module';
-import { AddParticipantData, CreatePollData } from '../types';
+import {
+  AddParticipantPayload,
+  CreatePollData,
+  RemoveParticipantPayload,
+} from '../types';
 
 @Injectable()
 export class PollsRepository {
@@ -27,12 +31,13 @@ export class PollsRepository {
     pollId,
     userId,
   }: CreatePollData): Promise<Poll> {
-    const initialPoll = {
+    const initialPoll: Poll = {
       id: pollId,
       topic,
       votesPerVoter,
       participants: {},
       adminId: userId,
+      hasStarted: false,
     };
 
     this.logger.log(
@@ -78,7 +83,7 @@ export class PollsRepository {
     pollId,
     userId,
     name,
-  }: AddParticipantData): Promise<Poll> {
+  }: AddParticipantPayload): Promise<Poll> {
     this.logger.log(
       `Attempting to add a participant with userId/name: ${userId}/${name} to pollId: ${pollId}`,
     );
@@ -87,7 +92,7 @@ export class PollsRepository {
 
     try {
       const currentPoll = await this.redisClient.get(key);
-      const updatedPoll = { ...JSON.parse(currentPoll) } as Poll;
+      const updatedPoll = JSON.parse(currentPoll) as Poll;
       updatedPoll.participants[userId] = name;
       await this.redisClient.setex(key, +this.ttl, JSON.stringify(updatedPoll));
 
@@ -99,6 +104,32 @@ export class PollsRepository {
       throw new InternalServerErrorException(
         `Failed to add a participant with userId/name: ${userId}/${name} to pollId: ${pollId}`,
       );
+    }
+  }
+
+  async removeParticipant({
+    pollId,
+    userId,
+  }: RemoveParticipantPayload): Promise<Poll> {
+    this.logger.log(`removing userId: ${userId} from poll: ${pollId}`);
+
+    const key = `polls:${pollId}`;
+
+    try {
+      const currentPoll = await this.redisClient.get(key);
+      const updatedPoll = JSON.parse(currentPoll) as Poll;
+      Object.keys(updatedPoll.participants).forEach((id) => {
+        if (id === userId) delete updatedPoll.participants[id];
+      });
+      await this.redisClient.setex(key, +this.ttl, JSON.stringify(updatedPoll));
+
+      return this.getPoll(pollId);
+    } catch (e) {
+      this.logger.error(
+        `Failed to remove userId: ${userId} from poll: ${pollId}`,
+        e,
+      );
+      throw new InternalServerErrorException('Failed to remove participant');
     }
   }
 }
