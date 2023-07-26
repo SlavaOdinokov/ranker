@@ -9,6 +9,7 @@ import { IORedisKey } from 'src/redis/redis.module';
 import {
   AddNominationData,
   AddParticipantPayload,
+  AddParticipantRankingsData,
   CreatePollData,
   RemoveNominationData,
   RemoveParticipantPayload,
@@ -39,6 +40,7 @@ export class PollsRepository {
       votesPerVoter,
       participants: {},
       nominations: {},
+      rankings: {},
       adminId: userId,
       hasStarted: false,
     };
@@ -65,9 +67,8 @@ export class PollsRepository {
   async getPoll(pollId: string): Promise<Poll> {
     this.logger.log(`Attempting to get poll with: ${pollId}`);
 
-    const key = `polls:${pollId}`;
-
     try {
+      const key = `polls:${pollId}`;
       const currentPoll = await this.redisClient.get(key);
       this.logger.verbose(currentPoll);
 
@@ -76,7 +77,7 @@ export class PollsRepository {
       // }
 
       return JSON.parse(currentPoll) as Poll;
-    } catch (e) {
+    } catch (err) {
       this.logger.error(`Failed to get pollId ${pollId}`);
       throw new InternalServerErrorException(`Failed to get pollId ${pollId}`);
     }
@@ -91,18 +92,15 @@ export class PollsRepository {
       `Attempting to add a participant with userId/name: ${userId}/${name} to pollId: ${pollId}`,
     );
 
-    const key = `polls:${pollId}`;
-
     try {
-      const currentPoll = await this.redisClient.get(key);
-      const updatedPoll = JSON.parse(currentPoll) as Poll;
-      updatedPoll.participants[userId] = name;
-      await this.redisClient.setex(key, +this.ttl, JSON.stringify(updatedPoll));
+      const field = `participants.${userId}`;
+      await this.updatePoll(pollId, field, name);
 
       return this.getPoll(pollId);
-    } catch (e) {
+    } catch (err) {
       this.logger.error(
         `Failed to add a participant with userId/name: ${userId}/${name} to pollId: ${pollId}`,
+        err,
       );
       throw new InternalServerErrorException(
         `Failed to add a participant with userId/name: ${userId}/${name} to pollId: ${pollId}`,
@@ -116,21 +114,15 @@ export class PollsRepository {
   }: RemoveParticipantPayload): Promise<Poll> {
     this.logger.log(`removing userId: ${userId} from poll: ${pollId}`);
 
-    const key = `polls:${pollId}`;
-
     try {
-      const currentPoll = await this.redisClient.get(key);
-      const updatedPoll = JSON.parse(currentPoll) as Poll;
-      Object.keys(updatedPoll.participants).forEach((id) => {
-        if (id === userId) delete updatedPoll.participants[id];
-      });
-      await this.redisClient.setex(key, +this.ttl, JSON.stringify(updatedPoll));
+      const field = `participants`;
+      await this.updatePoll(pollId, field, {}, userId);
 
       return this.getPoll(pollId);
-    } catch (e) {
+    } catch (err) {
       this.logger.error(
         `Failed to remove userId: ${userId} from poll: ${pollId}`,
-        e,
+        err,
       );
       throw new InternalServerErrorException('Failed to remove participant');
     }
@@ -145,19 +137,15 @@ export class PollsRepository {
       `Attempting to add a nomination with nominationID/nomination: ${nominationId}/${nomination.text} to pollId: ${pollId}`,
     );
 
-    const key = `polls:${pollId}`;
-
     try {
-      const currentPoll = await this.redisClient.get(key);
-      const updatedPoll = JSON.parse(currentPoll) as Poll;
-      updatedPoll.nominations[nominationId] = nomination;
-      await this.redisClient.setex(key, +this.ttl, JSON.stringify(updatedPoll));
+      const field = `nominations.${nominationId}`;
+      await this.updatePoll(pollId, field, nomination);
 
       return this.getPoll(pollId);
-    } catch (e) {
+    } catch (err) {
       this.logger.error(
         `Failed to add a nomination with nominationID/text: ${nominationId}/${nomination.text} to pollId: ${pollId}`,
-        e,
+        err,
       );
       throw new InternalServerErrorException(
         `Failed to add a nomination with nominationID/text: ${nominationId}/${nomination.text} to pollId: ${pollId}`,
@@ -173,25 +161,89 @@ export class PollsRepository {
       `removing nominationID: ${nominationId} from poll: ${pollId}`,
     );
 
-    const key = `polls:${pollId}`;
-
     try {
-      const currentPoll = await this.redisClient.get(key);
-      const updatedPoll = JSON.parse(currentPoll) as Poll;
-      Object.keys(updatedPoll.nominations).forEach((id) => {
-        if (id === nominationId) delete updatedPoll.nominations[id];
-      });
-      await this.redisClient.setex(key, +this.ttl, JSON.stringify(updatedPoll));
+      const field = `nominations`;
+      await this.updatePoll(pollId, field, {}, nominationId);
 
       return this.getPoll(pollId);
-    } catch (e) {
+    } catch (err) {
       this.logger.error(
         `Failed to remove nominationId: ${nominationId} from poll: ${pollId}`,
-        e,
+        err,
       );
       throw new InternalServerErrorException(
         `Failed to remove nominationId: ${nominationId} from poll: ${pollId}`,
       );
     }
+  }
+
+  async startPoll(pollId: string): Promise<Poll> {
+    this.logger.log(`setting hasStarted for poll: ${pollId}`);
+
+    try {
+      const field = `hasStarted`;
+      await this.updatePoll(pollId, field, true);
+      return this.getPoll(pollId);
+    } catch (err) {
+      this.logger.error(`Failed set hasStarted for poll: ${pollId}`, err);
+      throw new InternalServerErrorException(
+        'The was an error starting the poll',
+      );
+    }
+  }
+
+  async addParticipantRankings({
+    pollId,
+    userId,
+    rankings,
+  }: AddParticipantRankingsData): Promise<Poll> {
+    this.logger.log(
+      `Attempting to add rankings for userId/name: ${userId} to pollId: ${pollId}`,
+      rankings,
+    );
+
+    try {
+      const field = `rankings.${userId}`;
+      await this.updatePoll(pollId, field, rankings);
+      return this.getPoll(pollId);
+    } catch (e) {
+      this.logger.error(
+        `Failed to add a rankings for userId/name: ${userId}/ to pollId: ${pollId}`,
+        rankings,
+      );
+      throw new InternalServerErrorException(
+        'There was an error starting the poll',
+      );
+    }
+  }
+
+  private async updatePoll(
+    pollId: string,
+    field: string,
+    value: any,
+    removeId?: string,
+  ) {
+    const key = `polls:${pollId}`;
+    const currentPoll = await this.redisClient.get(key);
+    const ttl = await this.redisClient.ttl(key);
+    const updatedPoll = JSON.parse(currentPoll) as Poll;
+    const keysArr = field.split('.');
+
+    if (removeId) {
+      Object.keys(updatedPoll[field]).forEach((id) => {
+        if (id === removeId) delete updatedPoll[field][id];
+      });
+    } else {
+      if (keysArr.length === 2) {
+        updatedPoll[keysArr[0]] = {
+          ...updatedPoll[keysArr[0]],
+          [keysArr[1]]: value,
+        };
+      } else {
+        updatedPoll[field] = value;
+      }
+    }
+
+    await this.redisClient.setex(key, ttl, JSON.stringify(updatedPoll));
   }
 }

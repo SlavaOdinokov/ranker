@@ -37,6 +37,12 @@ export interface RemoveParticipantPayload {
   userId: string;
 }
 
+export type SubmitRankingsPayload = {
+  pollId: string;
+  userId: string;
+  rankings: string[];
+};
+
 export interface CreatePollResponse {
   poll: Poll;
   accessToken: string;
@@ -65,6 +71,12 @@ export interface RemoveNominationData {
   pollId: string;
   nominationId: string;
 }
+
+export type AddParticipantRankingsData = {
+  pollId: string;
+  userId: string;
+  rankings: string[];
+};
 
 export interface AuthRequestBody {
   accessToken: string;

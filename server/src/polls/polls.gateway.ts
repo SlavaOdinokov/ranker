@@ -148,4 +148,34 @@ export class PollsGateway
 
     this.io.to(client.pollId).emit('poll_updated', updatedPoll);
   }
+
+  @UseGuards(AdminGuard)
+  @SubscribeMessage('start_vote')
+  async startVote(@ConnectedSocket() client: SocketRequest): Promise<void> {
+    this.logger.debug(`Attempting to start voting for poll: ${client.pollId}`);
+    const updatedPoll = await this.pollsService.startPoll(client.pollId);
+    this.io.to(client.pollId).emit('poll_updated', updatedPoll);
+  }
+
+  @SubscribeMessage('submit_rankings')
+  async submitRankings(
+    @ConnectedSocket() client: SocketRequest,
+    @MessageBody('rankings') rankings: string[],
+  ): Promise<void> {
+    this.logger.debug(
+      `Submitting votes for user: ${client.userId} belonging to pollID: "${client.pollId}"`,
+    );
+
+    const updatedPoll = await this.pollsService.submitRankings({
+      pollId: client.pollId,
+      userId: client.userId,
+      rankings,
+    });
+
+    // an enhancement might be to not send ranking data to clients,
+    // but merely a list of the participants who have voted since another
+    // participant getting this data could lead to cheating
+    // we may add this while working on the client
+    this.io.to(client.pollId).emit('poll_updated', updatedPoll);
+  }
 }
