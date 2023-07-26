@@ -1,7 +1,7 @@
 import { Request } from 'express';
 import { Socket } from 'socket.io';
 
-import { Poll } from 'shared';
+import { Nomination, Poll } from 'shared';
 
 export interface CreatePollPayload {
   topic: string;
@@ -26,6 +26,12 @@ export interface AddParticipantPayload {
   name: string;
 }
 
+export interface AddNominationPayload {
+  pollId: string;
+  userId: string;
+  text: string;
+}
+
 export interface RemoveParticipantPayload {
   pollId: string;
   userId: string;
@@ -47,6 +53,17 @@ export interface CreatePollData {
   topic: string;
   votesPerVoter: number;
   userId: string;
+}
+
+export interface AddNominationData {
+  pollId: string;
+  nominationId: string;
+  nomination: Nomination;
+}
+
+export interface RemoveNominationData {
+  pollId: string;
+  nominationId: string;
 }
 
 export interface AuthRequestBody {

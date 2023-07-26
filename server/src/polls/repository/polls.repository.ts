@@ -7,8 +7,10 @@ import { Poll } from 'shared';
 import { Redis } from 'ioredis';
 import { IORedisKey } from 'src/redis/redis.module';
 import {
+  AddNominationData,
   AddParticipantPayload,
   CreatePollData,
+  RemoveNominationData,
   RemoveParticipantPayload,
 } from '../types';
 
@@ -36,6 +38,7 @@ export class PollsRepository {
       topic,
       votesPerVoter,
       participants: {},
+      nominations: {},
       adminId: userId,
       hasStarted: false,
     };
@@ -130,6 +133,65 @@ export class PollsRepository {
         e,
       );
       throw new InternalServerErrorException('Failed to remove participant');
+    }
+  }
+
+  async addNomination({
+    pollId,
+    nominationId,
+    nomination,
+  }: AddNominationData): Promise<Poll> {
+    this.logger.log(
+      `Attempting to add a nomination with nominationID/nomination: ${nominationId}/${nomination.text} to pollId: ${pollId}`,
+    );
+
+    const key = `polls:${pollId}`;
+
+    try {
+      const currentPoll = await this.redisClient.get(key);
+      const updatedPoll = JSON.parse(currentPoll) as Poll;
+      updatedPoll.nominations[nominationId] = nomination;
+      await this.redisClient.setex(key, +this.ttl, JSON.stringify(updatedPoll));
+
+      return this.getPoll(pollId);
+    } catch (e) {
+      this.logger.error(
+        `Failed to add a nomination with nominationID/text: ${nominationId}/${nomination.text} to pollId: ${pollId}`,
+        e,
+      );
+      throw new InternalServerErrorException(
+        `Failed to add a nomination with nominationID/text: ${nominationId}/${nomination.text} to pollId: ${pollId}`,
+      );
+    }
+  }
+
+  async removeNomination({
+    pollId,
+    nominationId,
+  }: RemoveNominationData): Promise<Poll> {
+    this.logger.log(
+      `removing nominationID: ${nominationId} from poll: ${pollId}`,
+    );
+
+    const key = `polls:${pollId}`;
+
+    try {
+      const currentPoll = await this.redisClient.get(key);
+      const updatedPoll = JSON.parse(currentPoll) as Poll;
+      Object.keys(updatedPoll.nominations).forEach((id) => {
+        if (id === nominationId) delete updatedPoll.nominations[id];
+      });
+      await this.redisClient.setex(key, +this.ttl, JSON.stringify(updatedPoll));
+
+      return this.getPoll(pollId);
+    } catch (e) {
+      this.logger.error(
+        `Failed to remove nominationId: ${nominationId} from poll: ${pollId}`,
+        e,
+      );
+      throw new InternalServerErrorException(
+        `Failed to remove nominationId: ${nominationId} from poll: ${pollId}`,
+      );
     }
   }
 }

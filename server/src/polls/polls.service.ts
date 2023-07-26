@@ -4,13 +4,15 @@ import { JwtService } from '@nestjs/jwt';
 import { Poll } from 'shared';
 
 import {
+  AddNominationPayload,
   AddParticipantPayload,
   CreatePollPayload,
   JoinPollPayload,
   RejoinPollPayload,
+  RemoveNominationData,
   RemoveParticipantPayload,
 } from './types';
-import { createPollId, createUserId } from 'src/utils';
+import { createPollId, createUserId, createNominationId } from 'src/utils';
 import { PollsRepository } from './repository/polls.repository';
 
 @Injectable()
@@ -110,5 +112,24 @@ export class PollsService {
       });
       return updatedPoll;
     }
+  }
+
+  async addNomination({
+    pollId,
+    userId,
+    text,
+  }: AddNominationPayload): Promise<Poll> {
+    return this.pollsRepository.addNomination({
+      pollId,
+      nominationId: createNominationId(),
+      nomination: { userId, text },
+    });
+  }
+
+  async removeNomination({
+    pollId,
+    nominationId,
+  }: RemoveNominationData): Promise<Poll> {
+    return this.pollsRepository.removeNomination({ pollId, nominationId });
   }
 }

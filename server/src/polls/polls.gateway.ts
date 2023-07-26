@@ -21,6 +21,7 @@ import { PollsService } from './polls.service';
 import { SocketRequest } from './types';
 import { WsCatchAllFilter } from 'src/exceptions/ws.filter';
 import { AdminGuard } from 'src/guards/admin.guard';
+import { NominationDto } from './dto/nomination.dto';
 
 @UsePipes(new ValidationPipe())
 @UseFilters(new WsCatchAllFilter())
@@ -110,5 +111,41 @@ export class PollsGateway
     if (updatedPoll) {
       this.io.to(client.pollId).emit('poll_updated', updatedPoll);
     }
+  }
+
+  @SubscribeMessage('nominate')
+  async nominate(
+    @MessageBody() nomination: NominationDto,
+    @ConnectedSocket() client: SocketRequest,
+  ): Promise<void> {
+    this.logger.debug(
+      `Attempting to add nomination for user ${client.userId} to poll ${client.pollId}\n${nomination.text}`,
+    );
+
+    const updatedPoll = await this.pollsService.addNomination({
+      pollId: client.pollId,
+      userId: client.userId,
+      text: nomination.text,
+    });
+
+    this.io.to(client.pollId).emit('poll_updated', updatedPoll);
+  }
+
+  @UseGuards(AdminGuard)
+  @SubscribeMessage('remove_nomination')
+  async removeNomination(
+    @MessageBody('id') nominationId: string,
+    @ConnectedSocket() client: SocketRequest,
+  ): Promise<void> {
+    this.logger.debug(
+      `Attempting to remove nomination ${nominationId} from poll ${client.pollId}`,
+    );
+
+    const updatedPoll = await this.pollsService.removeNomination({
+      pollId: client.pollId,
+      nominationId,
+    });
+
+    this.io.to(client.pollId).emit('poll_updated', updatedPoll);
   }
 }
