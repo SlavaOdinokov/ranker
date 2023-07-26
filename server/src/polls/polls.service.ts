@@ -89,6 +89,10 @@ export class PollsService {
     return { poll: joinedPoll };
   }
 
+  async getPoll(pollId: string): Promise<Poll> {
+    return this.pollsRepository.getPoll(pollId);
+  }
+
   async addParticipant(dto: AddParticipantPayload): Promise<Poll> {
     return this.pollsRepository.addParticipant(dto);
   }

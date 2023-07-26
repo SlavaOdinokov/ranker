@@ -1,16 +1,26 @@
-import { Logger, UsePipes, ValidationPipe, UseFilters } from '@nestjs/common';
+import {
+  Logger,
+  UsePipes,
+  ValidationPipe,
+  UseFilters,
+  UseGuards,
+} from '@nestjs/common';
 import {
   OnGatewayInit,
   WebSocketGateway,
   OnGatewayConnection,
   OnGatewayDisconnect,
   WebSocketServer,
+  ConnectedSocket,
+  MessageBody,
+  SubscribeMessage,
 } from '@nestjs/websockets';
 import { Namespace } from 'socket.io';
 
 import { PollsService } from './polls.service';
 import { SocketRequest } from './types';
 import { WsCatchAllFilter } from 'src/exceptions/ws.filter';
+import { AdminGuard } from 'src/guards/admin.guard';
 
 @UsePipes(new ValidationPipe())
 @UseFilters(new WsCatchAllFilter())
@@ -79,6 +89,26 @@ export class PollsGateway
     // in this case, the socket is disconnect, but no the poll state
     if (updatedPoll) {
       this.io.to(pollId).emit('poll_updated', updatedPoll);
+    }
+  }
+
+  @UseGuards(AdminGuard)
+  @SubscribeMessage('remove_participant')
+  async removeParticipant(
+    @MessageBody('id') id: string,
+    @ConnectedSocket() client: SocketRequest,
+  ) {
+    this.logger.debug(
+      `Attempting to remove participant ${id} from poll ${client.pollId}`,
+    );
+
+    const updatedPoll = await this.pollsService.removeParticipant({
+      pollId: client.pollId,
+      userId: id,
+    });
+
+    if (updatedPoll) {
+      this.io.to(client.pollId).emit('poll_updated', updatedPoll);
     }
   }
 }
