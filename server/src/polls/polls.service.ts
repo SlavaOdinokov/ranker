@@ -13,7 +13,12 @@ import {
   RemoveParticipantPayload,
   SubmitRankingsPayload,
 } from './types';
-import { createPollId, createUserId, createNominationId } from 'src/utils';
+import {
+  createPollId,
+  createUserId,
+  createNominationId,
+  getResults,
+} from 'src/utils';
 import { PollsRepository } from './repository/polls.repository';
 
 @Injectable()
@@ -148,5 +153,21 @@ export class PollsService {
     }
 
     return this.pollsRepository.addParticipantRankings(dto);
+  }
+
+  async computeResults(pollId: string): Promise<Poll> {
+    const poll = await this.pollsRepository.getPoll(pollId);
+
+    const results = getResults(
+      poll.rankings,
+      poll.nominations,
+      poll.votesPerVoter,
+    );
+
+    return this.pollsRepository.addResults(pollId, results);
+  }
+
+  async cancelPoll(pollId: string): Promise<void> {
+    await this.pollsRepository.deletePoll(pollId);
   }
 }

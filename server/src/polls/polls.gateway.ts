@@ -178,4 +178,20 @@ export class PollsGateway
     // we may add this while working on the client
     this.io.to(client.pollId).emit('poll_updated', updatedPoll);
   }
+
+  @UseGuards(AdminGuard)
+  @SubscribeMessage('close_poll')
+  async closePoll(@ConnectedSocket() client: SocketRequest): Promise<void> {
+    this.logger.debug(`Closing poll: ${client.pollId} and computing results`);
+    const updatedPoll = await this.pollsService.computeResults(client.pollId);
+    this.io.to(client.pollId).emit('poll_updated', updatedPoll);
+  }
+
+  @UseGuards(AdminGuard)
+  @SubscribeMessage('cancel_poll')
+  async cancelPoll(@ConnectedSocket() client: SocketRequest): Promise<void> {
+    this.logger.debug(`Cancelling poll with id: "${client.pollId}"`);
+    await this.pollsService.cancelPoll(client.pollId);
+    this.io.to(client.pollId).emit('poll_cancelled');
+  }
 }

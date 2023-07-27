@@ -16,6 +16,12 @@ export interface Rankings {
   [userId: string]: NominationID[];
 }
 
+export interface Result {
+  nominationID: NominationID;
+  nominationText: string;
+  score: number;
+}
+
 export interface Poll {
   id: string;
   topic: string;
@@ -24,6 +30,6 @@ export interface Poll {
   adminId: string;
   nominations: Nominations;
   rankings: Rankings;
-  // results: Results;
+  results: Result[];
   hasStarted: boolean;
 }
