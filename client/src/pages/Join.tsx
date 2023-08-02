@@ -6,12 +6,12 @@ import { AppPage, actions } from '../state';
 import { makeRequest } from '../api';
 
 const Join: React.FC = () => {
-  const [pollID, setPollID] = useState('');
+  const [pollId, setPollID] = useState('');
   const [name, setName] = useState('');
   const [apiError, setApiError] = useState('');
 
   const areFieldsValid = (): boolean => {
-    if (pollID.length < 6 || pollID.length > 6) {
+    if (pollId.length < 6 || pollId.length > 6) {
       return false;
     }
     if (name.length < 1 || name.length > 25) {
@@ -30,7 +30,7 @@ const Join: React.FC = () => {
     }>('/polls/join', {
       method: 'POST',
       body: JSON.stringify({
-        pollID,
+        pollId,
         name,
       }),
     });
