@@ -1,6 +1,8 @@
 import { proxy } from 'valtio';
+import { subscribeKey } from 'valtio/utils';
 
 import { Poll } from 'shared';
+import { getTokenPayload } from './util';
 
 export enum AppPage {
   Welcome = 'welcome',
@@ -9,16 +11,38 @@ export enum AppPage {
   WaitingRoom = 'waiting-room',
 }
 
+interface Me {
+  id: string;
+  name: string;
+}
+
 export interface AppState {
   isLoading: boolean;
   currentPage: AppPage;
   poll?: Poll;
   accessToken?: string;
+  me?: Me;
+  isAdmin: boolean;
 }
 
-const state: AppState = proxy({
+const state: AppState = proxy<AppState>({
   isLoading: false,
   currentPage: AppPage.Welcome,
+
+  get me() {
+    const accessToken = this.accessToken;
+    if (!accessToken) return;
+    const decodedToken = getTokenPayload(accessToken);
+    return {
+      id: decodedToken.sub,
+      name: decodedToken.name,
+    };
+  },
+
+  get isAdmin() {
+    if (!this.me) return false;
+    return this.me?.id === this.poll?.adminId;
+  },
 });
 
 const actions = {
@@ -41,5 +65,11 @@ const actions = {
     state.accessToken = token;
   },
 };
+
+subscribeKey(state, 'accessToken', () => {
+  if (state.accessToken) {
+    localStorage.setItem('accessToken', state.accessToken);
+  }
+});
 
 export { state, actions };
