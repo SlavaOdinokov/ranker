@@ -3,8 +3,8 @@ version: '3.8'
 services:
   redis:
     image: 'redislabs/rejson:2.0.0'
-    ports:
-      - '6379:6379'
+    expose:
+      - 6379
     volumes:
       - 'redisdata:/data'
 volumes:
