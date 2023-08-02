@@ -111,7 +111,7 @@ export class PollsService {
   }: RemoveParticipantPayload): Promise<Poll | void> {
     const poll = await this.pollsRepository.getPoll(pollId);
 
-    if (!poll.hasStarted) {
+    if (poll && !poll.hasStarted) {
       const updatedPoll = await this.pollsRepository.removeParticipant({
         userId,
         pollId,
