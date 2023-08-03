@@ -23,6 +23,6 @@ async function bootstrap() {
   app.setGlobalPrefix(globalPrefix);
   app.useWebSocketAdapter(new SocketIOAdapter(app, configService));
   await app.listen(port);
-  logger.log(`Server running on port ${port}/${globalPrefix}`);
+  logger.log(`Server running on http://localhost:${port}/${globalPrefix}`);
 }
 bootstrap();

@@ -1,3 +1,4 @@
+import { nanoid } from 'nanoid';
 import { Socket } from 'socket.io-client';
 import { proxy, ref } from 'valtio';
 import { subscribeKey } from 'valtio/utils';
@@ -18,9 +19,19 @@ interface Me {
   name: string;
 }
 
+interface WsError {
+  type: string;
+  message: string;
+}
+
+interface WsErrorUnique extends WsError {
+  id: string;
+}
+
 export interface AppState {
   isLoading: boolean;
   currentPage: AppPage;
+  wsErrors: WsErrorUnique[];
   poll?: Poll;
   accessToken?: string;
   socket?: Socket;
@@ -31,6 +42,7 @@ export interface AppState {
 const state: AppState = proxy<AppState>({
   isLoading: false,
   currentPage: AppPage.Welcome,
+  wsErrors: [],
 
   get me() {
     const accessToken = this.accessToken;
@@ -86,6 +98,18 @@ const actions = {
   },
   updatePoll: (poll: Poll): void => {
     state.poll = poll;
+  },
+  addWsError: (error: WsError): void => {
+    state.wsErrors = [
+      ...state.wsErrors,
+      {
+        ...error,
+        id: nanoid(6),
+      },
+    ];
+  },
+  removeWsError: (id: string): void => {
+    state.wsErrors = state.wsErrors.filter((error) => error.id !== id);
   },
 };
 
