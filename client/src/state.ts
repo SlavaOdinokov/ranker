@@ -37,9 +37,12 @@ export interface AppState {
   socket?: Socket;
   me?: Me;
   isAdmin: boolean;
+  nominationCount: number;
+  participantCount: number;
+  canStartVote: boolean;
 }
 
-const state: AppState = proxy<AppState>({
+const state = proxy<AppState>({
   isLoading: false,
   currentPage: AppPage.Welcome,
   wsErrors: [],
@@ -58,6 +61,19 @@ const state: AppState = proxy<AppState>({
     if (!this.me) return false;
     return this.me?.id === this.poll?.adminId;
   },
+
+  get participantCount() {
+    return Object.keys(this.poll?.participants || {}).length;
+  },
+
+  get nominationCount() {
+    return Object.keys(this.poll?.nominations || {}).length;
+  },
+
+  get canStartVote() {
+    const votesPerVoter = this.poll?.votesPerVoter ?? 100;
+    return this.nominationCount >= votesPerVoter;
+  },
 });
 
 const actions = {
@@ -65,6 +81,8 @@ const actions = {
     state.currentPage = page;
   },
   startOver: (): void => {
+    actions.reset();
+    localStorage.removeItem('accessToken');
     actions.setPage(AppPage.Welcome);
   },
   startLoading: (): void => {
@@ -98,6 +116,26 @@ const actions = {
   },
   updatePoll: (poll: Poll): void => {
     state.poll = poll;
+  },
+  nominate: (text: string): void => {
+    state.socket?.emit('nominate', { text });
+  },
+  removeNomination: (id: string): void => {
+    state.socket?.emit('remove_nomination', { id });
+  },
+  removeParticipant: (id: string): void => {
+    state.socket?.emit('remove_participant', { id });
+  },
+  startVote: (): void => {
+    state.socket?.emit('start_vote');
+  },
+  reset: (): void => {
+    state.socket?.disconnect();
+    state.poll = undefined;
+    state.accessToken = undefined;
+    state.isLoading = false;
+    state.socket = undefined;
+    state.wsErrors = [];
   },
   addWsError: (error: WsError): void => {
     state.wsErrors = [
