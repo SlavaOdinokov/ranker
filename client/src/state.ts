@@ -12,6 +12,7 @@ export enum AppPage {
   Create = 'create',
   Join = 'join',
   WaitingRoom = 'waiting-room',
+  Voting = 'voting',
 }
 
 interface Me {
@@ -136,6 +137,12 @@ const actions = {
     state.isLoading = false;
     state.socket = undefined;
     state.wsErrors = [];
+  },
+  submitRankings: (rankings: string[]): void => {
+    state.socket?.emit('submit_rankings', { rankings });
+  },
+  cancelPoll: (): void => {
+    state.socket?.emit('cancel_poll');
   },
   addWsError: (error: WsError): void => {
     state.wsErrors = [
